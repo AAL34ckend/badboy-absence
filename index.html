@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistem Absensi QR Code</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Absensi Capster</h1>
+      <div
+        id="loading-spinner"
+        class="spinner-border text-primary"
+        role="status"
+      >
+        <span class="sr-only">Loading...</span>
+      </div>
+      <div id="status-container" style="display: none">
+        <p id="store-info"></p>
+        <h2 id="status-message"></h2>
+        <p id="keterangan"></p>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>

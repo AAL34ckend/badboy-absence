@@ -1,0 +1,73 @@
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  margin: 0;
+}
+
+.container {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  width: 90%;
+  max-width: 500px;
+}
+
+h1 {
+  color: #333;
+}
+
+#status-message {
+  font-size: 2em;
+  font-weight: bold;
+  margin-top: 20px;
+  color: #4caf50; /* Default: Hadir */
+}
+
+.status-hadir {
+  color: #4caf50;
+}
+.status-terlambat {
+  color: #ff9800;
+}
+.status-ditolak {
+  color: #f44336;
+}
+.status-error {
+  color: #607d8b;
+}
+
+#keterangan {
+  font-size: 1.1em;
+  color: #555;
+}
+
+#store-info {
+  color: #888;
+  font-style: italic;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+  border: 0.25em solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spinner-grow 0.75s linear infinite;
+  margin: 50px auto;
+  color: #007bff;
+}
+
+@keyframes spinner-grow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
