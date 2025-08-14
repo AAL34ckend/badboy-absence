@@ -1,5 +1,5 @@
 // Ganti dengan URL web app Google Apps Script Anda
-const WEB_APP_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz5S10ON7zjPP21UgVGEka66Ae-j9RzKg6v3RXCH65Ts-2fPGlBJB1bubMLApY1PVM97Q/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   processAbsence();
