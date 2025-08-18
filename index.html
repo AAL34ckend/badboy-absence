@@ -5,40 +5,186 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sistem Absensi QR Code</title>
     <style>
-      body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f2f5; margin: 0; }
-      .container { background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); text-align: center; width: 90%; max-width: 500px; }
-      h1 { color: #333; }
-      #status-message { font-size: 2em; font-weight: bold; margin-top: 20px; color: #4caf50; }
-      .status-hadir { color: #4caf50; }
-      .status-terlambat { color: #ff9800; }
-      .status-ditolak { color: #f44336; }
-      .status-error { color: #607d8b; }
-      #keterangan { font-size: 1.1em; color: #555; }
-      #store-info { color: #888; font-style: italic; }
-      .spinner-border { width: 3rem; height: 3rem; border: 0.25em solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spinner-grow 0.75s linear infinite; margin: 50px auto; color: #007bff; }
-      @keyframes spinner-grow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #f0f2f5;
+        margin: 0;
+      }
+
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+      }
+
+      h1 {
+        color: #333;
+      }
+
+      #status-message {
+        font-size: 2em;
+        font-weight: bold;
+        margin-top: 20px;
+        color: #4caf50; /* Default: Hadir */
+      }
+
+      .status-hadir {
+        color: #4caf50;
+      }
+      .status-terlambat {
+        color: #ff9800;
+      }
+      .status-ditolak {
+        color: #f44336;
+      }
+      .status-error {
+        color: #607d8b;
+      }
+
+      #keterangan {
+        font-size: 1.1em;
+        color: #555;
+      }
+
+      #store-info {
+        color: #888;
+        font-style: italic;
+      }
+
+      .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border: 0.25em solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-grow 0.75s linear infinite;
+        margin: 50px auto;
+        color: #007bff;
+      }
+
+      @keyframes spinner-grow {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>Absensi Capster</h1>
-      
-      <div id="loading-spinner" class="spinner-border text-primary" role="status">
+      <div
+        id="loading-spinner"
+        class="spinner-border text-primary"
+        role="status"
+      >
         <span class="sr-only">Loading...</span>
       </div>
-
-      <div id="form-container" style="display: none;">
-        <p id="store-info">Sedang memuat data Barbershop</p>
-        <label for="capsterSelect">Pilih Nama Anda:</label>
-        <select id="capsterSelect"></select>
-        <button id="submitBtn">Kirim Absensi</button>
-      </div>
-
       <div id="status-container" style="display: none">
+        <p id="store-info"></p>
         <h2 id="status-message"></h2>
         <p id="keterangan"></p>
       </div>
     </div>
-    <script src="script.js"></script>
+    <script>
+      // Ganti dengan URL web app Google Apps Script Anda
+      const WEB_APP_URL =
+        "https://script.google.com/macros/s/AKfycbz5S10ON7zjPP21UgVGEka66Ae-j9RzKg6v3RXCH65Ts-2fPGlBJB1bubMLApY1PVM97Q/exec";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        processAbsence();
+      });
+
+      async function processAbsence() {
+        const loadingSpinner = document.getElementById("loading-spinner");
+        const statusContainer = document.getElementById("status-container");
+        const statusMessage = document.getElementById("status-message");
+        const keterangan = document.getElementById("keterangan");
+        const storeInfo = document.getElementById("store-info");
+
+        loadingSpinner.style.display = "block";
+        statusContainer.style.display = "none";
+
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+
+          const storeName = urlParams.get("storeName");
+          const capsterId = urlParams.get("capsterId");
+
+          if (!storeName || !capsterId) {
+            throw new Error(
+              "Data QR tidak lengkap. Mohon pindai QR code yang valid."
+            );
+          }
+
+          const checkinTime = new Date();
+          const capsterCoords = await getCurrentPosition();
+
+          storeInfo.innerText = `Store: ${storeName} | Waktu Absensi: ${checkinTime.toLocaleString(
+            "id-ID"
+          )}`;
+
+          const response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              storeName: storeName,
+              capsterId: capsterId,
+              checkinTime: checkinTime,
+              capsterLat: capsterCoords.latitude,
+              capsterLon: capsterCoords.longitude,
+              qrCodeUrl: window.location.href, // Mengirim URL lengkap dari QR Code
+            }),
+          });
+
+          const result = await response.json();
+
+          statusMessage.innerText = result.status;
+          keterangan.innerText = result.keterangan;
+          statusMessage.className = `status-${result.status
+            .toLowerCase()
+            .replace(" ", "-")}`;
+        } catch (error) {
+          console.error("Error:", error);
+          statusMessage.innerText = "Error";
+          keterangan.innerText =
+            "Terjadi kesalahan saat memproses absensi: " + error.message;
+          statusMessage.className = "status-error";
+        } finally {
+          loadingSpinner.style.display = "none";
+          statusContainer.style.display = "block";
+        }
+      }
+
+      function getCurrentPosition() {
+        return new Promise((resolve, reject) => {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                resolve({
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                });
+              },
+              (error) => {
+                reject("Gagal mendapatkan lokasi: " + error.message);
+              }
+            );
+          } else {
+            reject("Geolocation tidak didukung oleh browser ini.");
+          }
+        });
+      }
+    </script>
   </body>
 </html>
