@@ -100,60 +100,110 @@
       // Ganti dengan URL web app Google Apps Script Anda
       const WEB_APP_URL =
         "https://script.google.com/macros/s/AKfycbz5S10ON7zjPP21UgVGEka66Ae-j9RzKg6v3RXCH65Ts-2fPGlBJB1bubMLApY1PVM97Q/exec";
-      
+
       document.addEventListener("DOMContentLoaded", () => {
-        processAbsence();
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeName = urlParams.get("storeName");
+
+        // Jika storeName ditemukan di URL, tampilkan formulir
+        if (storeName) {
+          document.getElementById(
+            "store-info"
+          ).innerText = `Anda akan absen di toko: ${storeName}`;
+          fetchCapstersAndPopulateDropdown();
+
+          document.getElementById("submitBtn").addEventListener("click", () => {
+            processAbsence();
+          });
+        } else {
+          // Jika tidak ada parameter yang sesuai, berikan pesan error
+          document.getElementById("store-info").innerText =
+            "QR Code tidak valid. Mohon gunakan QR Code khusus untuk absensi.";
+          document.getElementById("loading-spinner").style.display = "none";
+          document.getElementById("form-container").style.display = "block";
+        }
       });
 
+      async function fetchCapstersAndPopulateDropdown() {
+        try {
+          const response = await fetch(WEB_APP_URL);
+          const capsters = await response.json();
+
+          const selectElement = document.getElementById("capsterSelect");
+          if (capsters.length > 0) {
+            selectElement.innerHTML =
+              '<option value="">-- Pilih Capster --</option>';
+            capsters.forEach((capster) => {
+              const option = document.createElement("option");
+              option.value = capster.id;
+              option.text = capster.nama;
+              selectElement.appendChild(option);
+            });
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("form-container").style.display = "block";
+          } else {
+            selectElement.innerHTML =
+              '<option value="">Tidak ada capster terdaftar.</option>';
+          }
+        } catch (error) {
+          document.getElementById("status-container").style.display = "block";
+          document.getElementById("status-message").innerText = "Error";
+          document.getElementById("keterangan").innerText =
+            "Gagal memuat daftar capster. " + error.message;
+          document.getElementById("loading-spinner").style.display = "none";
+        }
+      }
+
       async function processAbsence() {
+        const formContainer = document.getElementById("form-container");
         const loadingSpinner = document.getElementById("loading-spinner");
         const statusContainer = document.getElementById("status-container");
         const statusMessage = document.getElementById("status-message");
         const keterangan = document.getElementById("keterangan");
-        const storeInfo = document.getElementById("store-info");
 
+        const capsterSelect = document.getElementById("capsterSelect");
+        const capsterId = capsterSelect.value;
+        if (!capsterId) {
+          alert("Mohon pilih nama Anda.");
+          return;
+        }
+
+        formContainer.style.display = "none";
         loadingSpinner.style.display = "block";
         statusContainer.style.display = "none";
 
         try {
           const urlParams = new URLSearchParams(window.location.search);
-
           const storeName = urlParams.get("storeName");
-          const capsterId = urlParams.get("capsterId");
-
-          if (!storeName || !capsterId) {
-            throw new Error(
-              "Data QR tidak lengkap. Mohon pindai QR code yang valid."
-            );
-          }
-
+          const storeOpenTime = urlParams.get("openTime");
+          const storeCloseTime = urlParams.get("closeTime");
+          const storeLat = urlParams.get("lat");
+          const storeLon = urlParams.get("lon");
           const checkinTime = new Date();
           const capsterCoords = await getCurrentPosition();
-
-          storeInfo.innerText = `Store: ${storeName} | Waktu Absensi: ${checkinTime.toLocaleString(
-            "id-ID"
-          )}`;
 
           const response = await fetch(WEB_APP_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               storeName: storeName,
+              openTime: storeOpenTime,
+              closeTime: storeCloseTime,
+              storeLat: storeLat,
+              storeLon: storeLon,
               capsterId: capsterId,
               checkinTime: checkinTime,
               capsterLat: capsterCoords.latitude,
               capsterLon: capsterCoords.longitude,
-              qrCodeUrl: window.location.href, // Mengirim URL lengkap dari QR Code
             }),
           });
 
           const result = await response.json();
-
           statusMessage.innerText = result.status;
           keterangan.innerText = result.keterangan;
           statusMessage.className = `status-${result.status
             .toLowerCase()
-            .replace(" ", "-")}`;
+            .replace(/[^a-z0-9]/g, "-")}`;
         } catch (error) {
           console.error("Error:", error);
           statusMessage.innerText = "Error";
