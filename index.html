@@ -3,112 +3,259 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Generator QR Code Absensi Toko</title>
+    <title>Sistem Absensi Capster</title>
     <style>
       body {
         font-family: Arial, sans-serif;
-        padding: 20px;
-        max-width: 600px;
-        margin: auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #f0f2f5;
+        margin: 0;
       }
-      label {
-        display: block;
-        margin-top: 10px;
+
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+      }
+
+      h1 {
+        color: #333;
+      }
+
+      #status-message {
+        font-size: 2em;
         font-weight: bold;
+        margin-top: 20px;
+        color: #4caf50;
       }
-      input[type="text"],
-      input[type="number"] {
+
+      .status-hadir {
+        color: #4caf50;
+      }
+      .status-terlambat {
+        color: #ff9800;
+      }
+      .status-ditolak {
+        color: #f44336;
+      }
+      .status-error {
+        color: #607d8b;
+      }
+
+      #keterangan {
+        font-size: 1.1em;
+        color: #555;
+      }
+
+      #store-info {
+        color: #888;
+        font-style: italic;
+      }
+
+      .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        border: 0.25em solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spinner-grow 0.75s linear infinite;
+        margin: 50px auto;
+        color: #007bff;
+      }
+
+      @keyframes spinner-grow {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      select,
+      button {
         width: 100%;
-        padding: 8px;
-        margin-top: 5px;
-        box-sizing: border-box;
+        padding: 10px;
+        margin-top: 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
       }
       button {
-        margin-top: 20px;
-        padding: 10px 15px;
         background-color: #007bff;
         color: white;
-        border: none;
-        border-radius: 4px;
         cursor: pointer;
       }
-      button:hover {
-        background-color: #0056b3;
-      }
-      #outputUrl {
-        margin-top: 20px;
-        padding: 15px;
-        background-color: #e9ecef;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        word-break: break-all;
-      }
-      #qr-code-container {
-        margin-top: 20px;
-        text-align: center;
-      }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   </head>
   <body>
-    <h1>Generator QR Code Absensi Toko</h1>
+    <div class="container">
+      <h1>Absensi Capster</h1>
 
-    <label for="storeName">Nama Store:</label>
-    <input type="text" id="storeName" value="Pundung" />
+      <div
+        id="loading-spinner"
+        class="spinner-border text-primary"
+        role="status"
+      >
+        <span class="sr-only">Loading...</span>
+      </div>
 
-    <label for="storeId">ID Store:</label>
-    <input type="text" id="storeId" value="1" />
+      <div id="form-container" style="display: none">
+        <p id="store-info">Sedang memuat data toko...</p>
+        <label for="capsterSelect">Pilih Nama Anda:</label>
+        <select id="capsterSelect"></select>
+        <button id="submitBtn">Kirim Absensi</button>
+      </div>
 
-    <label for="openTime">Jam Buka (HH:mm):</label>
-    <input type="text" id="openTime" value="10:00" />
-
-    <label for="closeTime">Jam Tutup (HH:mm):</label>
-    <input type="text" id="closeTime" value="22:00" />
-
-    <label for="latitude">Latitude Store:</label>
-    <input type="number" step="any" id="latitude" value="-7.74345" />
-
-    <label for="longitude">Longitude Store:</label>
-    <input type="number" step="any" id="longitude" value="110.46673" />
-
-    <button onclick="generateQrCode()">Buat QR Code</button>
-
-    <div id="outputUrl">
-      <p>URL akan muncul di sini.</p>
-    </div>
-
-    <div id="qr-code-container">
-      <p>QR Code akan muncul di bawah ini.</p>
-      <div id="qrcode"></div>
+      <div id="status-container" style="display: none">
+        <h2 id="status-message"></h2>
+        <p id="keterangan"></p>
+      </div>
     </div>
 
     <script>
-      function generateQrCode() {
-        const githubPageUrl = "https://aal34ckend.github.io/badboy-absence/";
+      // Ganti dengan URL web app Google Apps Script Anda
+      const WEB_APP_URL =
+        "https://script.google.com/macros/s/AKfycbz5S10ON7zjPP21UgVGEka66Ae-j9RzKg6v3RXCH65Ts-2fPGlBJB1bubMLApY1PVM97Q/exec";
 
-        const storeName = document.getElementById("storeName").value;
-        const storeId = document.getElementById("storeId").value;
-        const openTime = document.getElementById("openTime").value;
-        const closeTime = document.getElementById("closeTime").value;
-        const latitude = document.getElementById("latitude").value;
-        const longitude = document.getElementById("longitude").value;
+      document.addEventListener("DOMContentLoaded", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeName = urlParams.get("storeName");
 
-        const fullUrl = `${githubPageUrl}?storeName=${storeName}&storeId=${storeId}&openTime=${openTime}&closeTime=${closeTime}&lat=${latitude}&lon=${longitude}`;
+        // Jika storeName ditemukan di URL, tampilkan formulir
+        if (storeName) {
+          document.getElementById(
+            "store-info"
+          ).innerText = `Anda akan absen di toko: ${storeName}`;
+          fetchCapstersAndPopulateDropdown();
 
-        const outputDiv = document.getElementById("outputUrl");
-        outputDiv.innerHTML = `<p><b>URL QR Code:</b></p><p>${fullUrl}</p>`;
+          document.getElementById("submitBtn").addEventListener("click", () => {
+            processAbsence();
+          });
+        } else {
+          // Jika tidak ada parameter yang sesuai, berikan pesan error
+          document.getElementById("store-info").innerText =
+            "QR Code tidak valid. Mohon gunakan QR Code khusus untuk absensi.";
+          document.getElementById("loading-spinner").style.display = "none";
+          document.getElementById("form-container").style.display = "block";
+        }
+      });
 
-        document.getElementById("qrcode").innerHTML = "";
+      async function fetchCapstersAndPopulateDropdown() {
+        try {
+          const response = await fetch(WEB_APP_URL);
+          const capsters = await response.json();
 
-        new QRCode(document.getElementById("qrcode"), {
-          text: fullUrl,
-          width: 256,
-          height: 256,
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.H,
+          const selectElement = document.getElementById("capsterSelect");
+          if (Array.isArray(capsters) && capsters.length > 0) {
+            selectElement.innerHTML =
+              '<option value="">-- Pilih Capster --</option>';
+            capsters.forEach((capster) => {
+              const option = document.createElement("option");
+              option.value = capster.id;
+              option.text = capster.nama;
+              selectElement.appendChild(option);
+            });
+            document.getElementById("loading-spinner").style.display = "none";
+            document.getElementById("form-container").style.display = "block";
+          } else {
+            selectElement.innerHTML =
+              '<option value="">Tidak ada capster terdaftar.</option>';
+          }
+        } catch (error) {
+          document.getElementById("status-container").style.display = "block";
+          document.getElementById("status-message").innerText = "Error";
+          document.getElementById("keterangan").innerText =
+            "Gagal memuat daftar capster. " + error.message;
+          document.getElementById("loading-spinner").style.display = "none";
+        }
+      }
+
+      async function processAbsence() {
+        const formContainer = document.getElementById("form-container");
+        const loadingSpinner = document.getElementById("loading-spinner");
+        const statusContainer = document.getElementById("status-container");
+        const statusMessage = document.getElementById("status-message");
+        const keterangan = document.getElementById("keterangan");
+
+        const capsterSelect = document.getElementById("capsterSelect");
+        const capsterId = capsterSelect.value;
+        if (!capsterId) {
+          alert("Mohon pilih nama Anda.");
+          return;
+        }
+
+        formContainer.style.display = "none";
+        loadingSpinner.style.display = "block";
+        statusContainer.style.display = "none";
+
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const storeName = urlParams.get("storeName");
+          const storeOpenTime = urlParams.get("openTime");
+          const storeCloseTime = urlParams.get("closeTime");
+          const storeLat = urlParams.get("lat");
+          const storeLon = urlParams.get("lon");
+          const checkinTime = new Date();
+          const capsterCoords = await getCurrentPosition();
+
+          const response = await fetch(WEB_APP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              storeName: storeName,
+              openTime: storeOpenTime,
+              closeTime: storeCloseTime,
+              storeLat: storeLat,
+              storeLon: storeLon,
+              capsterId: capsterId,
+              checkinTime: checkinTime,
+              capsterLat: capsterCoords.latitude,
+              capsterLon: capsterCoords.longitude,
+            }),
+          });
+
+          const result = await response.json();
+          statusMessage.innerText = result.status;
+          keterangan.innerText = result.keterangan;
+          statusMessage.className = `status-${result.status
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "-")}`;
+        } catch (error) {
+          console.error("Error:", error);
+          statusMessage.innerText = "Error";
+          keterangan.innerText =
+            "Terjadi kesalahan saat memproses absensi: " + error.message;
+          statusMessage.className = "status-error";
+        } finally {
+          loadingSpinner.style.display = "none";
+          statusContainer.style.display = "block";
+        }
+      }
+
+      function getCurrentPosition() {
+        return new Promise((resolve, reject) => {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                resolve({
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+                });
+              },
+              (error) => {
+                reject("Gagal mendapatkan lokasi: " + error.message);
+              }
+            );
+          } else {
+            reject("Geolocation tidak didukung oleh browser ini.");
+          }
         });
       }
     </script>
