@@ -191,6 +191,16 @@
           return;
         }
 
+        // Periksa izin lokasi sebelum memulai proses
+        const capsterCoords = await getCurrentPosition().catch((error) => {
+          alert(error); // Tampilkan pesan error jika izin ditolak
+          return null; // Mengembalikan null untuk menghentikan proses
+        });
+
+        if (!capsterCoords) {
+          return; // Hentikan proses jika koordinat tidak tersedia
+        }
+
         formContainer.style.display = "none";
         loadingSpinner.style.display = "block";
         statusContainer.style.display = "none";
@@ -203,7 +213,6 @@
           const storeLat = urlParams.get("lat");
           const storeLon = urlParams.get("lon");
           const checkinTime = new Date();
-          const capsterCoords = await getCurrentPosition();
 
           const response = await fetch(WEB_APP_URL, {
             method: "POST",
@@ -250,7 +259,13 @@
                 });
               },
               (error) => {
-                reject("Gagal mendapatkan lokasi: " + error.message);
+                if (error.code === error.PERMISSION_DENIED) {
+                  reject(
+                    "Akses lokasi ditolak. Absensi gagal karena izin lokasi wajib diberikan."
+                  );
+                } else {
+                  reject("Gagal mendapatkan lokasi: " + error.message);
+                }
               }
             );
           } else {
