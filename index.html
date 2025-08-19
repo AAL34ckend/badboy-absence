@@ -126,20 +126,16 @@
 
       document.addEventListener("DOMContentLoaded", () => {
         const urlParams = new URLSearchParams(window.location.search);
-        const storeName = urlParams.get("storeName");
+        const storeId = urlParams.get("storeId");
 
-        // Jika storeName ditemukan di URL, tampilkan formulir
-        if (storeName) {
-          document.getElementById(
-            "store-info"
-          ).innerText = `Anda akan absen di toko: ${storeName}`;
-          fetchCapstersAndPopulateDropdown();
+        if (storeId) {
+          // Fetch store details and capsters list based on storeId
+          fetchStoreAndCapstersData(storeId);
 
           document.getElementById("submitBtn").addEventListener("click", () => {
-            processAbsence();
+            processAbsence(storeId);
           });
         } else {
-          // Jika tidak ada parameter yang sesuai, berikan pesan error
           document.getElementById("store-info").innerText =
             "QR Code tidak valid. Mohon gunakan QR Code khusus untuk absensi.";
           document.getElementById("loading-spinner").style.display = "none";
@@ -147,10 +143,23 @@
         }
       });
 
-      async function fetchCapstersAndPopulateDropdown() {
+      async function fetchStoreAndCapstersData(storeId) {
         try {
-          const response = await fetch(WEB_APP_URL);
-          const capsters = await response.json();
+          const storeResponse = await fetch(
+            `${WEB_APP_URL}?storeId=${storeId}`
+          );
+          const storeData = await storeResponse.json();
+
+          if (storeData.error) {
+            throw new Error(storeData.error);
+          }
+
+          document.getElementById(
+            "store-info"
+          ).innerText = `Anda akan absen di toko: ${storeData.Nama_Store}`;
+
+          const capstersResponse = await fetch(WEB_APP_URL);
+          const capsters = await capstersResponse.json();
 
           const selectElement = document.getElementById("capsterSelect");
           if (Array.isArray(capsters) && capsters.length > 0) {
@@ -158,8 +167,8 @@
               '<option value="">-- Pilih Capster --</option>';
             capsters.forEach((capster) => {
               const option = document.createElement("option");
-              option.value = capster.id;
-              option.text = capster.nama;
+              option.value = capster.Id;
+              option.text = capster.Nama;
               selectElement.appendChild(option);
             });
             document.getElementById("loading-spinner").style.display = "none";
@@ -172,12 +181,12 @@
           document.getElementById("status-container").style.display = "block";
           document.getElementById("status-message").innerText = "Error";
           document.getElementById("keterangan").innerText =
-            "Gagal memuat daftar capster. " + error.message;
+            "Gagal memuat data toko atau capster. " + error.message;
           document.getElementById("loading-spinner").style.display = "none";
         }
       }
 
-      async function processAbsence() {
+      async function processAbsence(storeId) {
         const formContainer = document.getElementById("form-container");
         const loadingSpinner = document.getElementById("loading-spinner");
         const statusContainer = document.getElementById("status-container");
@@ -191,14 +200,13 @@
           return;
         }
 
-        // Periksa izin lokasi sebelum memulai proses
         const capsterCoords = await getCurrentPosition().catch((error) => {
-          alert(error); // Tampilkan pesan error jika izin ditolak
-          return null; // Mengembalikan null untuk menghentikan proses
+          alert(error);
+          return null;
         });
 
         if (!capsterCoords) {
-          return; // Hentikan proses jika koordinat tidak tersedia
+          return;
         }
 
         formContainer.style.display = "none";
@@ -206,25 +214,13 @@
         statusContainer.style.display = "none";
 
         try {
-          const urlParams = new URLSearchParams(window.location.search);
-          const storeName = urlParams.get("storeName");
-          const storeOpenTime = urlParams.get("openTime");
-          const storeCloseTime = urlParams.get("closeTime");
-          const storeLat = urlParams.get("lat");
-          const storeLon = urlParams.get("lon");
-          const checkinTime = new Date();
-
           const response = await fetch(WEB_APP_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              storeName: storeName,
-              openTime: storeOpenTime,
-              closeTime: storeCloseTime,
-              storeLat: storeLat,
-              storeLon: storeLon,
+              storeId: storeId,
               capsterId: capsterId,
-              checkinTime: checkinTime,
+              checkinTime: new Date(),
               capsterLat: capsterCoords.latitude,
               capsterLon: capsterCoords.longitude,
             }),
