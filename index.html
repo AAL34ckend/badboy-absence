@@ -92,6 +92,19 @@
         color: white;
         cursor: pointer;
       }
+      #debug-info {
+          margin-top: 30px;
+          padding: 15px;
+          background-color: #f8d7da;
+          color: #721c24;
+          border: 1px solid #f5c6cb;
+          border-radius: 5px;
+          text-align: left;
+          font-family: 'Courier New', Courier, monospace;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          display: none;
+      }
     </style>
   </head>
   <body>
@@ -117,12 +130,17 @@
         <h2 id="status-message"></h2>
         <p id="keterangan"></p>
       </div>
+
+      <div id="debug-info">
+        <strong>Hasil Debug:</strong>
+        <pre id="debug-content"></pre>
+      </div>
     </div>
 
     <script>
       // Ganti dengan URL web app Google Apps Script Anda
       const WEB_APP_URL =
-        "https://script.google.com/macros/s/AKfycbyNmb4Qx0rXqC88oglWp-Cqs2IlJogA7ed7CYasiCw8fNYDCZmZJcLWZ_HS7BertP4OIg/exec";
+        "https://script.google.com/macros/s/AKfycbz5S10ON7zjPP21UgVGEka66Ae-j9RzKg6v3RXCH65Ts-2fPGlBJB1bubMLApY1PVM97Q/exec";
 
       document.addEventListener("DOMContentLoaded", () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -144,45 +162,65 @@
       });
 
       async function fetchStoreAndCapstersData(storeId) {
-        try {
-          const storeResponse = await fetch(
-            `${WEB_APP_URL}?storeId=${storeId}`
-          );
-          const storeData = await storeResponse.json();
+        const loadingSpinner = document.getElementById("loading-spinner");
+        const formContainer = document.getElementById("form-container");
+        const statusContainer = document.getElementById("status-container");
+        const debugInfo = document.getElementById("debug-info");
+        const debugContent = document.getElementById("debug-content");
+        
+        loadingSpinner.style.display = "block";
+        formContainer.style.display = "none";
+        statusContainer.style.display = "none";
+        debugInfo.style.display = "none";
 
+        try {
+          // Fetching store data
+          const storeUrl = `${WEB_APP_URL}?storeId=${storeId}`;
+          const storeResponse = await fetch(storeUrl);
+          if (!storeResponse.ok) {
+            throw new Error(`HTTP error! status: ${storeResponse.status}`);
+          }
+          const storeData = await storeResponse.json();
+          debugContent.textContent += `\n--- Respon Store ---\n${JSON.stringify(storeData, null, 2)}`;
+          
           if (storeData.error) {
             throw new Error(storeData.error);
           }
 
-          document.getElementById(
-            "store-info"
-          ).innerText = `Anda akan absen di toko: ${storeData.Nama_Store}`;
+          document.getElementById("store-info").innerText = `Anda akan absen di toko: ${storeData.Nama_Store}`;
 
+          // Fetching capsters data
           const capstersResponse = await fetch(WEB_APP_URL);
+          if (!capstersResponse.ok) {
+            throw new Error(`HTTP error! status: ${capstersResponse.status}`);
+          }
           const capsters = await capstersResponse.json();
-
+          debugContent.textContent += `\n\n--- Respon Capsters ---\n${JSON.stringify(capsters, null, 2)}`;
+          
           const selectElement = document.getElementById("capsterSelect");
           if (Array.isArray(capsters) && capsters.length > 0) {
-            selectElement.innerHTML =
-              '<option value="">-- Pilih Capster --</option>';
+            selectElement.innerHTML = '<option value="">-- Pilih Capster --</option>';
             capsters.forEach((capster) => {
               const option = document.createElement("option");
               option.value = capster.Id;
               option.text = capster.Nama;
               selectElement.appendChild(option);
             });
-            document.getElementById("loading-spinner").style.display = "none";
-            document.getElementById("form-container").style.display = "block";
+            loadingSpinner.style.display = "none";
+            formContainer.style.display = "block";
           } else {
-            selectElement.innerHTML =
-              '<option value="">Tidak ada capster terdaftar.</option>';
+            selectElement.innerHTML = '<option value="">Tidak ada capster terdaftar.</option>';
+            loadingSpinner.style.display = "none";
+            formContainer.style.display = "block";
           }
         } catch (error) {
+          debugContent.textContent += `\n\n--- Error Ditemukan ---\n${error.message}`;
           document.getElementById("status-container").style.display = "block";
           document.getElementById("status-message").innerText = "Error";
-          document.getElementById("keterangan").innerText =
-            "Gagal memuat data toko atau capster. " + error.message;
-          document.getElementById("loading-spinner").style.display = "none";
+          document.getElementById("keterangan").innerText = "Gagal memuat data toko atau capster. " + error.message;
+          loadingSpinner.style.display = "none";
+        } finally {
+          debugInfo.style.display = "block";
         }
       }
 
@@ -192,6 +230,11 @@
         const statusContainer = document.getElementById("status-container");
         const statusMessage = document.getElementById("status-message");
         const keterangan = document.getElementById("keterangan");
+        const debugInfo = document.getElementById("debug-info");
+        const debugContent = document.getElementById("debug-content");
+        
+        debugContent.textContent = "Mengirim absensi...";
+        debugInfo.style.display = "block";
 
         const capsterSelect = document.getElementById("capsterSelect");
         const capsterId = capsterSelect.value;
@@ -227,6 +270,7 @@
           });
 
           const result = await response.json();
+          debugContent.textContent += `\n\n--- Respon POST ---\n${JSON.stringify(result, null, 2)}`;
           statusMessage.innerText = result.status;
           keterangan.innerText = result.keterangan;
           statusMessage.className = `status-${result.status
@@ -234,6 +278,7 @@
             .replace(/[^a-z0-9]/g, "-")}`;
         } catch (error) {
           console.error("Error:", error);
+          debugContent.textContent += `\n\n--- Error POST Ditemukan ---\n${error.message}`;
           statusMessage.innerText = "Error";
           keterangan.innerText =
             "Terjadi kesalahan saat memproses absensi: " + error.message;
