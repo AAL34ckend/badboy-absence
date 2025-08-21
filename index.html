@@ -149,6 +149,7 @@
             `${WEB_APP_URL}?storeId=${storeId}`
           );
           const storeData = await storeResponse.json();
+          console.log(storeData);
 
           if (storeData.error) {
             throw new Error(storeData.error);
@@ -157,7 +158,7 @@
           // KUNCI INI SUDAH DIPERBAIKI
           document.getElementById(
             "store-info"
-          ).innerText = `Anda akan absen di toko: ${storeData.nama_store}`;
+          ).innerText = `Anda akan absen di toko: ${storeData.Nama_store}`;
 
           const capstersResponse = await fetch(WEB_APP_URL);
           const capsters = await capstersResponse.json();
