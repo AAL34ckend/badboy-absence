@@ -149,13 +149,11 @@
             `${WEB_APP_URL}?storeId=${storeId}`
           );
           const storeData = await storeResponse.json();
-          console.log(storeData);
 
           if (storeData.error) {
             throw new Error(storeData.error);
           }
 
-          // KUNCI INI SUDAH DIPERBAIKI
           document.getElementById(
             "store-info"
           ).innerText = `Anda akan absen di toko: ${storeData.Nama_Store}`;
@@ -169,7 +167,6 @@
               '<option value="">-- Pilih Capster --</option>';
             capsters.forEach((capster) => {
               const option = document.createElement("option");
-              // KUNCI INI SUDAH DIPERBAIKI
               option.value = capster.id;
               option.text = capster.nama;
               selectElement.appendChild(option);
@@ -217,19 +214,33 @@
         statusContainer.style.display = "none";
 
         try {
-          const response = await fetch(WEB_APP_URL, {
+          const response = await fetch(`${WEB_APP_URL}?storeId=${storeId}`);
+          const storeData = await response.json();
+
+          // Mengonversi waktu buka dan tutup
+          const bukaTime = new Date(storeData.Buka);
+          const tutupTime = new Date(storeData.Tutup);
+
+          const payload = {
+            storeId: storeId,
+            capsterId: capsterId,
+            checkinTime: new Date(),
+            capsterLat: capsterCoords.latitude,
+            capsterLon: capsterCoords.longitude,
+            storeLat: parseFloat(storeData.Latitude),
+            storeLon: parseFloat(storeData.Longitude),
+            radius: storeData.Radius,
+            buka: bukaTime.toTimeString(),
+            tutup: tutupTime.toTimeString()
+          };
+
+          const postResponse = await fetch(WEB_APP_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              storeId: storeId,
-              capsterId: capsterId,
-              checkinTime: new Date(),
-              capsterLat: capsterCoords.latitude,
-              capsterLon: capsterCoords.longitude,
-            }),
+            body: JSON.stringify(payload),
           });
 
-          const result = await response.json();
+          const result = await postResponse.json();
           statusMessage.innerText = result.status;
           keterangan.innerText = result.keterangan;
           statusMessage.className = `status-${result.status
