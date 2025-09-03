@@ -107,16 +107,6 @@
       <span class="sr-only">Memuat...</span>
     </div>
 
-    <!-- QR Code Generator Section -->
-    <div id="qr-generator-section" class="hidden">
-      <p>Pilih toko untuk membuat QR Code Absensi:</p>
-      <select id="storeSelect"></select>
-      <div id="qrcode-container" class="hidden">
-        <p>Pindai QR Code ini untuk Absensi:</p>
-        <img id="qrCodeImage" src="" alt="QR Code Absensi">
-      </div>
-    </div>
-
     <!-- Attendance Form Section -->
     <div id="absensi-form-section" class="hidden">
       <p id="store-info"></p>
@@ -152,7 +142,8 @@
       if (storeId) {
         initAbsensiForm(storeId);
       } else {
-        initQrGenerator();
+        // Jika tidak ada storeId, beritahu pengguna untuk menggunakan QR Code
+        handleError("QR Code tidak valid. Mohon gunakan QR Code khusus untuk absensi.");
       }
     });
 
@@ -194,46 +185,6 @@
             handleError(`Gagal mengirim data ke API: ${error.message}`);
             return null;
         }
-    }
-
-    async function initQrGenerator() {
-      const storeSelect = document.getElementById("storeSelect");
-      const qrCodeImage = document.getElementById("qrCodeImage");
-      const qrcodeContainer = document.getElementById("qrcode-container");
-      const loadingSpinner = document.getElementById("loading-spinner");
-      const qrGeneratorSection = document.getElementById("qr-generator-section");
-      
-      const stores = await fetchData('stores');
-      
-      loadingSpinner.classList.add("hidden");
-      qrGeneratorSection.classList.remove("hidden");
-      
-      if (stores && Array.isArray(stores) && stores.length > 0) {
-        storeSelect.innerHTML = '<option value="">-- Pilih Toko --</option>';
-        stores.forEach(store => {
-          const option = document.createElement("option");
-          option.value = store.id;
-          option.text = store.store;
-          storeSelect.appendChild(option);
-        });
-      } else {
-        storeSelect.innerHTML = '<option value="">Tidak ada toko terdaftar.</option>';
-      }
-
-      storeSelect.addEventListener("change", () => {
-        const selectedStoreId = storeSelect.value;
-        if (selectedStoreId) {
-          const pageUrl = window.location.href.split('?')[0];
-          const qrUrl = `${pageUrl}?storeId=${selectedStoreId}`;
-          
-          const qrCodeApiUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(qrUrl)}`;
-          
-          qrCodeImage.src = qrCodeApiUrl;
-          qrcodeContainer.classList.remove("hidden");
-        } else {
-          qrcodeContainer.classList.add("hidden");
-        }
-      });
     }
 
     async function initAbsensiForm(storeId) {
