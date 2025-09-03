@@ -1,235 +1,359 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <base target="_top" />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sistem Absensi Capster</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background-color: #f0f2f5;
-        margin: 0;
-      }
+<head>
+  <base target="_top" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistem Absensi Capster</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f0f2f5;
+      margin: 0;
+    }
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 90%;
+      max-width: 500px;
+    }
+    h1 {
+      color: #333;
+    }
+    #status-message {
+      font-size: 2em;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #4caf50;
+    }
+    .status-hadir { color: #4caf50; }
+    .status-terlambat { color: #ff9800; }
+    .status-ditolak { color: #f44336; }
+    .status-error { color: #607d8b; }
+    #keterangan {
+      font-size: 1.1em;
+      color: #555;
+    }
+    #store-info {
+      color: #888;
+      font-style: italic;
+    }
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+      border: 0.25em solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spinner-grow 0.75s linear infinite;
+      margin: 50px auto;
+      color: #007bff;
+    }
+    @keyframes spinner-grow {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    select, input[type="file"], button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    .photo-preview {
+      margin-top: 15px;
+      border: 1px dashed #ccc;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .photo-preview img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: auto;
+      border-radius: 5px;
+    }
+    .hidden { display: none; }
+    #qrcode-container {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px dashed #ddd;
+      border-radius: 8px;
+    }
+    #qrcode-container img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sistem Absensi Capster</h1>
+    
+    <div id="loading-spinner" class="spinner-border text-primary" role="status">
+      <span class="sr-only">Memuat...</span>
+    </div>
 
-      .container {
-        background-color: #ffffff;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        width: 90%;
-        max-width: 500px;
-      }
-
-      h1 {
-        color: #333;
-      }
-
-      #status-message {
-        font-size: 2em;
-        font-weight: bold;
-        margin-top: 20px;
-        color: #4caf50;
-      }
-
-      .status-hadir {
-        color: #4caf50;
-      }
-      .status-terlambat {
-        color: #ff9800;
-      }
-      .status-ditolak {
-        color: #f44336;
-      }
-      .status-error {
-        color: #607d8b;
-      }
-
-      #keterangan {
-        font-size: 1.1em;
-        color: #555;
-      }
-
-      #store-info {
-        color: #888;
-        font-style: italic;
-      }
-
-      .spinner-border {
-        width: 3rem;
-        height: 3rem;
-        border: 0.25em solid currentColor;
-        border-right-color: transparent;
-        border-radius: 50%;
-        animation: spinner-grow 0.75s linear infinite;
-        margin: 50px auto;
-        color: #007bff;
-      }
-
-      @keyframes spinner-grow {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      select,
-      button {
-        width: 100%;
-        padding: 10px;
-        margin-top: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-      button {
-        background-color: #007bff;
-        color: white;
-        cursor: pointer;
-        border: none;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Absensi Capster</h1>
-
-      <div
-        id="loading-spinner"
-        class="spinner-border text-primary"
-        role="status"
-      >
-        <span class="sr-only">Memuat...</span>
-      </div>
-
-      <div id="form-container" style="display: none">
-        <p id="store-info">Sedang memuat data toko...</p>
-        <label for="capsterSelect">Pilih Nama Anda:</label>
-        <select id="capsterSelect"></select>
-        <button id="submitBtn">Kirim Absensi</button>
-      </div>
-
-      <div id="status-container" style="display: none">
-        <h2 id="status-message"></h2>
-        <p id="keterangan"></p>
+    <!-- QR Code Generator Section -->
+    <div id="qr-generator-section" class="hidden">
+      <p>Pilih toko untuk membuat QR Code Absensi:</p>
+      <select id="storeSelect"></select>
+      <div id="qrcode-container" class="hidden">
+        <p>Pindai QR Code ini untuk Absensi:</p>
+        <img id="qrCodeImage" src="" alt="QR Code Absensi">
       </div>
     </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const storeId = urlParams.get("storeId");
+    <!-- Attendance Form Section -->
+    <div id="absensi-form-section" class="hidden">
+      <p id="store-info"></p>
+      <label for="capsterSelect">Pilih Nama Anda:</label>
+      <select id="capsterSelect"></select>
+      
+      <label for="photoInput">Ambil Foto Absensi:</label>
+      <input type="file" id="photoInput" accept="image/*" capture="camera" required>
+      <div id="photo-preview" class="photo-preview hidden">
+        <p>Pratinjau Foto:</p>
+        <img id="previewImage" src="" alt="Pratinjau Foto">
+      </div>
+      
+      <button id="checkinBtn" class="hidden">Absen Buka</button>
+      <button id="checkoutBtn" class="hidden">Absen Tutup</button>
+    </div>
 
-        if (storeId) {
-          google.script.run
-            .withSuccessHandler((response) => {
-              if (response.error) {
-                handleError(`Error: ${response.error}`);
-                document.getElementById("loading-spinner").style.display =
-                  "none";
-                document.getElementById("form-container").style.display =
-                  "block";
-                return;
-              }
+    <!-- Status Message Section -->
+    <div id="status-container" class="hidden">
+      <h2 id="status-message"></h2>
+      <p id="keterangan"></p>
+    </div>
+  </div>
 
-              document.getElementById(
-                "store-info"
-              ).innerText = `Anda akan absen di toko: ${response.Nama_Store}`;
+  <script>
+    // Ganti dengan URL Google Apps Script yang telah Anda Deploy
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9rczn07E29LnlK_hT1XizTHm7V_bZnqOq8Cevd0fjNFg7JO63-aSmnCmXTX_kjw9t0g/exec';
+    
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const storeId = urlParams.get("storeId");
+      
+      if (storeId) {
+        initAbsensiForm(storeId);
+      } else {
+        initQrGenerator();
+      }
+    });
 
-              google.script.run
-                .withSuccessHandler((capsters) => {
-                  const selectElement = document.getElementById("capsterSelect");
-                  if (Array.isArray(capsters) && capsters.length > 0) {
-                    selectElement.innerHTML =
-                      '<option value="">-- Pilih Capster --</option>';
-                    capsters.forEach((capster) => {
-                      const option = document.createElement("option");
-                      option.value = capster.id;
-                      option.text = capster.nama;
-                      selectElement.appendChild(option);
-                    });
-                    document.getElementById("loading-spinner").style.display =
-                      "none";
-                    document.getElementById("form-container").style.display =
-                      "block";
-                  } else {
-                    selectElement.innerHTML =
-                      '<option value="">Tidak ada capster terdaftar.</option>';
-                  }
-                })
-                .withFailureHandler((error) => {
-                  handleError(
-                    `Gagal memuat daftar capster: ${error.message}`
-                  );
-                })
-                .doGet(); 
-            })
-            .withFailureHandler((error) => {
-              handleError(`Gagal memuat data toko: ${error.message}`);
-            })
-            .doGet({ storeId: storeId }); 
+    // Mengambil data dari Apps Script API
+    async function fetchData(api, params = {}) {
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.set('api', api);
+        for (const key in params) {
+            url.searchParams.set(key, params[key]);
+        }
+        
+        try {
+            const response = await fetch(url.toString());
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            handleError(`Gagal memuat data dari API: ${error.message}`);
+            return null;
+        }
+    }
 
-          document.getElementById("submitBtn").addEventListener("click", () => {
-            processAbsence(storeId);
-          });
+    // Mengirim data ke Apps Script API
+    async function postData(data) {
+        try {
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            handleError(`Gagal mengirim data ke API: ${error.message}`);
+            return null;
+        }
+    }
+
+    async function initQrGenerator() {
+      const storeSelect = document.getElementById("storeSelect");
+      const qrCodeImage = document.getElementById("qrCodeImage");
+      const qrcodeContainer = document.getElementById("qrcode-container");
+      const loadingSpinner = document.getElementById("loading-spinner");
+      const qrGeneratorSection = document.getElementById("qr-generator-section");
+      
+      const stores = await fetchData('stores');
+      
+      loadingSpinner.classList.add("hidden");
+      qrGeneratorSection.classList.remove("hidden");
+      
+      if (stores && Array.isArray(stores) && stores.length > 0) {
+        storeSelect.innerHTML = '<option value="">-- Pilih Toko --</option>';
+        stores.forEach(store => {
+          const option = document.createElement("option");
+          option.value = store.id;
+          option.text = store.store;
+          storeSelect.appendChild(option);
+        });
+      } else {
+        storeSelect.innerHTML = '<option value="">Tidak ada toko terdaftar.</option>';
+      }
+
+      storeSelect.addEventListener("change", () => {
+        const selectedStoreId = storeSelect.value;
+        if (selectedStoreId) {
+          const pageUrl = window.location.href.split('?')[0];
+          const qrUrl = `${pageUrl}?storeId=${selectedStoreId}`;
+          
+          const qrCodeApiUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(qrUrl)}`;
+          
+          qrCodeImage.src = qrCodeApiUrl;
+          qrcodeContainer.classList.remove("hidden");
         } else {
-          handleError("QR Code tidak valid. Mohon gunakan QR Code khusus untuk absensi.");
-          document.getElementById("loading-spinner").style.display = "none";
-          document.getElementById("form-container").style.display = "block";
+          qrcodeContainer.classList.add("hidden");
         }
       });
+    }
 
-      async function processAbsence(storeId) {
-        const formContainer = document.getElementById("form-container");
-        const loadingSpinner = document.getElementById("loading-spinner");
-        const capsterSelect = document.getElementById("capsterSelect");
+    async function initAbsensiForm(storeId) {
+      const loadingSpinner = document.getElementById("loading-spinner");
+      const absensiFormSection = document.getElementById("absensi-form-section");
+      const statusContainer = document.getElementById("status-container");
+      const storeInfo = document.getElementById("store-info");
+      const capsterSelect = document.getElementById("capsterSelect");
+      const photoInput = document.getElementById("photoInput");
+      const previewImage = document.getElementById("previewImage");
+      const photoPreviewContainer = document.getElementById("photo-preview");
+      const checkinBtn = document.getElementById("checkinBtn");
+      const checkoutBtn = document.getElementById("checkoutBtn");
+      const now = new Date();
+
+      const data = await fetchData('all-data', { storeId: storeId });
+      
+      if (!data || data.error) {
+          handleError(data ? data.error : "Gagal memuat data toko dan capster.");
+          loadingSpinner.classList.add("hidden");
+          absensiFormSection.classList.remove("hidden");
+          return;
+      }
+      
+      const store = data.stores.find(s => s.id === storeId);
+      if (!store) {
+        handleError("ID Toko tidak valid atau tidak ditemukan.");
+        loadingSpinner.classList.add("hidden");
+        absensiFormSection.classList.remove("hidden");
+        return;
+      }
+
+      storeInfo.innerText = `Anda akan absen di toko: ${store.store}`;
+      
+      if (Array.isArray(data.capsters) && data.capsters.length > 0) {
+        capsterSelect.innerHTML = '<option value="">-- Pilih Capster --</option>';
+        data.capsters.forEach(capster => {
+          const option = document.createElement("option");
+          option.value = capster.id;
+          option.text = capster.nama;
+          capsterSelect.appendChild(option);
+        });
+      } else {
+        capsterSelect.innerHTML = '<option value="">Tidak ada capster terdaftar.</option>';
+      }
+
+      const bukaTime = parseTime(store.buka);
+      const tutupTime = parseTime(store.tutup);
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+
+      if (currentTime >= bukaTime && currentTime < tutupTime) {
+        checkinBtn.classList.remove("hidden");
+      } else if (currentTime >= tutupTime) {
+        checkoutBtn.classList.remove("hidden");
+      } else {
+        handleError("Toko belum buka atau sudah tutup untuk absensi.");
+        loadingSpinner.classList.add("hidden");
+        absensiFormSection.classList.remove("hidden");
+        return;
+      }
+
+      loadingSpinner.classList.add("hidden");
+      absensiFormSection.classList.remove("hidden");
+      
+      photoInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            previewImage.src = e.target.result;
+            photoPreviewContainer.classList.remove("hidden");
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      checkinBtn.addEventListener("click", () => processAbsence(storeId, "checkin"));
+      checkoutBtn.addEventListener("click", () => processAbsence(storeId, "checkout"));
+
+      async function processAbsence(storeId, action) {
         const capsterId = capsterSelect.value;
+        const photoFile = photoInput.files[0];
         
-        if (!capsterId) {
-          handleError("Mohon pilih nama Anda.");
+        if (!capsterId || !photoFile) {
+          handleError("Mohon pilih nama dan ambil foto.");
           return;
         }
 
-        formContainer.style.display = "none";
-        loadingSpinner.style.display = "block";
+        absensiFormSection.classList.add("hidden");
+        loadingSpinner.classList.remove("hidden");
 
-        try {
-          const capsterCoords = await getCurrentPosition();
-          google.script.run
-            .withSuccessHandler((result) => {
-              loadingSpinner.style.display = "none";
-              const statusContainer = document.getElementById("status-container");
-              const statusMessage = document.getElementById("status-message");
-              const keterangan = document.getElementById("keterangan");
-              statusContainer.style.display = "block";
-              statusMessage.innerText = result.status;
-              keterangan.innerText = result.keterangan;
-              statusMessage.className = `status-${result.status
-                .toLowerCase()
-                .replace(/[^a-z0-9]/g, "-")}`;
-            })
-            .withFailureHandler((error) => {
-              handleError(`Terjadi kesalahan saat memproses absensi: ${error.message}`);
-            })
-            .doPost({
-              storeId: storeId,
-              capsterId: capsterId,
-              checkinTime: new Date().toISOString(), 
-              capsterLat: capsterCoords.latitude,
-              capsterLon: capsterCoords.longitude,
+        const reader = new FileReader();
+        reader.readAsDataURL(photoFile);
+        reader.onloadend = async () => {
+          const base64Image = reader.result.split(",")[1];
+          try {
+            const capsterCoords = await getCurrentPosition();
+            const result = await postData({
+                storeId: storeId,
+                capsterId: capsterId,
+                checkinTime: new Date().toISOString(),
+                capsterLat: capsterCoords.latitude,
+                capsterLon: capsterCoords.longitude,
+                photoData: base64Image,
+                action: action
             });
-        } catch (error) {
-          handleError(error);
-          loadingSpinner.style.display = "none";
-          document.getElementById("form-container").style.display = "block";
-        }
+            
+            if (result) {
+              loadingSpinner.classList.add("hidden");
+              statusContainer.classList.remove("hidden");
+              document.getElementById("status-message").innerText = result.status;
+              document.getElementById("keterangan").innerText = result.keterangan;
+              document.getElementById("status-message").className = `status-${result.status.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+            }
+          } catch (error) {
+            handleError(error);
+            loadingSpinner.classList.add("hidden");
+            absensiFormSection.classList.remove("hidden");
+          }
+        };
       }
 
       function getCurrentPosition() {
@@ -244,9 +368,7 @@
               },
               (error) => {
                 if (error.code === error.PERMISSION_DENIED) {
-                  reject(
-                    "Akses lokasi ditolak. Absensi gagal karena izin lokasi wajib diberikan."
-                  );
+                  reject("Akses lokasi ditolak. Izin lokasi wajib diberikan.");
                 } else {
                   reject("Gagal mendapatkan lokasi: " + error.message);
                 }
@@ -259,19 +381,19 @@
       }
 
       function handleError(message) {
-        const loadingSpinner = document.getElementById("loading-spinner");
-        const statusContainer = document.getElementById("status-container");
-        const statusMessage = document.getElementById("status-message");
-        const keterangan = document.getElementById("keterangan");
-        const formContainer = document.getElementById("form-container");
-
-        loadingSpinner.style.display = "none";
-        statusContainer.style.display = "block";
-        statusMessage.innerText = "Error";
-        keterangan.innerText = message;
-        statusMessage.className = "status-error";
-        formContainer.style.display = "none";
+        loadingSpinner.classList.add("hidden");
+        statusContainer.classList.remove("hidden");
+        document.getElementById("status-message").innerText = "Error";
+        document.getElementById("keterangan").innerText = message;
+        document.getElementById("status-message").className = "status-error";
+        absensiFormSection.classList.add("hidden");
       }
-    </script>
-  </body>
+      
+      function parseTime(timeString) {
+          const [hours, minutes] = timeString.split(":").map(Number);
+          return hours * 60 + minutes;
+      }
+    }
+  </script>
+</body>
 </html>
