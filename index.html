@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
   <head>
+    <base target="_top" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sistem Absensi Capster</title>
-    
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -87,11 +87,13 @@
         margin-top: 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
+        box-sizing: border-box;
       }
       button {
         background-color: #007bff;
         color: white;
         cursor: pointer;
+        border: none;
       }
     </style>
   </head>
@@ -104,6 +106,7 @@
         class="spinner-border text-primary"
         role="status"
       >
+        <span class="sr-only">Memuat...</span>
       </div>
 
       <div id="form-container" style="display: none">
@@ -120,141 +123,112 @@
     </div>
 
     <script>
-      // Ganti dengan URL web app Google Apps Script Anda
-      const WEB_APP_URL =
-        "https://script.google.com/macros/s/AKfycbz9rczn07E29LnlK_hT1XizTHm7V_bZnqOq8Cevd0fjNFg7JO63-aSmnCmXTX_kjw9t0g/exec";
-
       document.addEventListener("DOMContentLoaded", () => {
         const urlParams = new URLSearchParams(window.location.search);
         const storeId = urlParams.get("storeId");
 
         if (storeId) {
-          // Fetch store details and capsters list based on storeId
-          fetchStoreAndCapstersData(storeId);
+          google.script.run
+            .withSuccessHandler((response) => {
+              if (response.error) {
+                handleError(`Error: ${response.error}`);
+                document.getElementById("loading-spinner").style.display =
+                  "none";
+                document.getElementById("form-container").style.display =
+                  "block";
+                return;
+              }
+
+              document.getElementById(
+                "store-info"
+              ).innerText = `Anda akan absen di toko: ${response.Nama_Store}`;
+
+              google.script.run
+                .withSuccessHandler((capsters) => {
+                  const selectElement = document.getElementById("capsterSelect");
+                  if (Array.isArray(capsters) && capsters.length > 0) {
+                    selectElement.innerHTML =
+                      '<option value="">-- Pilih Capster --</option>';
+                    capsters.forEach((capster) => {
+                      const option = document.createElement("option");
+                      option.value = capster.id;
+                      option.text = capster.nama;
+                      selectElement.appendChild(option);
+                    });
+                    document.getElementById("loading-spinner").style.display =
+                      "none";
+                    document.getElementById("form-container").style.display =
+                      "block";
+                  } else {
+                    selectElement.innerHTML =
+                      '<option value="">Tidak ada capster terdaftar.</option>';
+                  }
+                })
+                .withFailureHandler((error) => {
+                  handleError(
+                    `Gagal memuat daftar capster: ${error.message}`
+                  );
+                })
+                .doGet(); 
+            })
+            .withFailureHandler((error) => {
+              handleError(`Gagal memuat data toko: ${error.message}`);
+            })
+            .doGet({ storeId: storeId }); 
 
           document.getElementById("submitBtn").addEventListener("click", () => {
             processAbsence(storeId);
           });
         } else {
-          document.getElementById("store-info").innerText =
-            "QR Code tidak valid. Mohon gunakan QR Code khusus untuk absensi.";
+          handleError("QR Code tidak valid. Mohon gunakan QR Code khusus untuk absensi.");
           document.getElementById("loading-spinner").style.display = "none";
           document.getElementById("form-container").style.display = "block";
         }
       });
 
-      async function fetchStoreAndCapstersData(storeId) {
-        try {
-          const storeResponse = await fetch(
-            `${WEB_APP_URL}?storeId=${storeId}`
-          );
-          const storeData = await storeResponse.json();
-
-          if (storeData.error) {
-            throw new Error(storeData.error);
-          }
-
-          document.getElementById(
-            "store-info"
-          ).innerText = `Anda akan absen di toko: ${storeData.Nama_Store}`;
-
-          const capstersResponse = await fetch(WEB_APP_URL);
-          const capsters = await capstersResponse.json();
-
-          const selectElement = document.getElementById("capsterSelect");
-          if (Array.isArray(capsters) && capsters.length > 0) {
-            selectElement.innerHTML =
-              '<option value="">-- Pilih Capster --</option>';
-            capsters.forEach((capster) => {
-              const option = document.createElement("option");
-              option.value = capster.id;
-              option.text = capster.nama;
-              selectElement.appendChild(option);
-            });
-            document.getElementById("loading-spinner").style.display = "none";
-            document.getElementById("form-container").style.display = "block";
-          } else {
-            selectElement.innerHTML =
-              '<option value="">Tidak ada capster terdaftar.</option>';
-          }
-        } catch (error) {
-          document.getElementById("status-container").style.display = "block";
-          document.getElementById("status-message").innerText = "Error";
-          document.getElementById("keterangan").innerText =
-            "Gagal memuat data toko atau capster. " + error.message;
-          document.getElementById("loading-spinner").style.display = "none";
-        }
-      }
-
       async function processAbsence(storeId) {
         const formContainer = document.getElementById("form-container");
         const loadingSpinner = document.getElementById("loading-spinner");
-        const statusContainer = document.getElementById("status-container");
-        const statusMessage = document.getElementById("status-message");
-        const keterangan = document.getElementById("keterangan");
-
         const capsterSelect = document.getElementById("capsterSelect");
         const capsterId = capsterSelect.value;
+        
         if (!capsterId) {
-          alert("Mohon pilih nama Anda.");
-          return;
-        }
-
-        const capsterCoords = await getCurrentPosition().catch((error) => {
-          alert(error);
-          return null;
-        });
-
-        if (!capsterCoords) {
+          handleError("Mohon pilih nama Anda.");
           return;
         }
 
         formContainer.style.display = "none";
         loadingSpinner.style.display = "block";
-        statusContainer.style.display = "none";
 
         try {
-          const response = await fetch(`${WEB_APP_URL}?storeId=${storeId}`);
-          const storeData = await response.json();
-
-          // Mengonversi waktu buka dan tutup
-          const bukaTime = new Date(storeData.Buka);
-          const tutupTime = new Date(storeData.Tutup);
-
-          const payload = {
-            storeId: storeId,
-            capsterId: capsterId,
-            checkinTime: new Date(),
-            capsterLat: capsterCoords.latitude,
-            capsterLon: capsterCoords.longitude,
-            storeLat: parseFloat(storeData.Latitude),
-            storeLon: parseFloat(storeData.Longitude),
-            radius: storeData.Radius,
-            buka: bukaTime.toTimeString(),
-            tutup: tutupTime.toTimeString()
-          };
-
-          const postResponse = await fetch(WEB_APP_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-
-          const result = await postResponse.json();
-          statusMessage.innerText = result.status;
-          keterangan.innerText = result.keterangan;
-          statusMessage.className = `status-${result.status
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "-")}`;
+          const capsterCoords = await getCurrentPosition();
+          google.script.run
+            .withSuccessHandler((result) => {
+              loadingSpinner.style.display = "none";
+              const statusContainer = document.getElementById("status-container");
+              const statusMessage = document.getElementById("status-message");
+              const keterangan = document.getElementById("keterangan");
+              statusContainer.style.display = "block";
+              statusMessage.innerText = result.status;
+              keterangan.innerText = result.keterangan;
+              statusMessage.className = `status-${result.status
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, "-")}`;
+            })
+            .withFailureHandler((error) => {
+              handleError(`Terjadi kesalahan saat memproses absensi: ${error.message}`);
+            })
+            .doPost({
+              storeId: storeId,
+              capsterId: capsterId,
+              checkinTime: new Date().toISOString(), 
+              capsterLat: capsterCoords.latitude,
+              capsterLon: capsterCoords.longitude,
+            });
         } catch (error) {
-          console.error("Error:", error);
-          statusMessage.innerText = "Error";
-          keterangan.innerText =
-            "Terjadi kesalahan saat memproses absensi: " + error.message;
-          statusMessage.className = "status-error";
-        } finally {
+          handleError(error);
           loadingSpinner.style.display = "none";
-          statusContainer.style.display = "block";
+          document.getElementById("form-container").style.display = "block";
         }
       }
 
@@ -282,6 +256,21 @@
             reject("Geolocation tidak didukung oleh browser ini.");
           }
         });
+      }
+
+      function handleError(message) {
+        const loadingSpinner = document.getElementById("loading-spinner");
+        const statusContainer = document.getElementById("status-container");
+        const statusMessage = document.getElementById("status-message");
+        const keterangan = document.getElementById("keterangan");
+        const formContainer = document.getElementById("form-container");
+
+        loadingSpinner.style.display = "none";
+        statusContainer.style.display = "block";
+        statusMessage.innerText = "Error";
+        keterangan.innerText = message;
+        statusMessage.className = "status-error";
+        formContainer.style.display = "none";
       }
     </script>
   </body>
