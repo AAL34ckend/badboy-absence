@@ -226,14 +226,13 @@
     const bukaTime = parseTime(store.buka);
     const tutupTime = parseTime(store.tutup);
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    console.log("⏰ Buka:", bukaTime, "Tutup:", tutupTime, "Sekarang:", currentTime); // ✅
-
+    
+    console.log("🕒 Jam buka:", store.buka, "| Jam tutup:", store.tutup, "| Sekarang:", now.toLocaleTimeString());
+    
     if (currentTime >= bukaTime && currentTime < tutupTime) {
       checkinBtn.classList.remove("hidden");
-    } else if (currentTime >= tutupTime) {
-      checkoutBtn.classList.remove("hidden");
-    } else {
-      handleError("Toko belum buka atau sudah tutup untuk absensi.");
+    } else if (currentTime >= tutupTime || currentTime < bukaTime) {
+      handleError("Sudah tidak bisa absen karena di luar jam buka/tutup.");
       loadingSpinner.classList.add("hidden");
       absensiFormSection.classList.remove("hidden");
       return;
