@@ -182,7 +182,6 @@
         // Fungsi untuk mengambil data awal dari Apps Script
         async function fetchInitialData() {
             console.log("Memulai fetching data...");
-            console.log(data.capsters);
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('storeId');
 
@@ -214,7 +213,7 @@
                 // Tampilkan info store
                 if (data.store && data.store.name) {
                     console.log("Data toko berhasil dimuat:", data.store.name);
-                    storeInfo.textContent = `Anda akan absen di toko: ${data.store.name}`;
+                    storeInfo.textContent = `Anda akan absen di toko: ${data.store.nama}`;
                 } else {
                     console.warn("Peringatan: Data toko tidak ditemukan.");
                     storeInfo.textContent = `Anda akan absen di toko: Tidak Ditemukan`;
