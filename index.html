@@ -161,9 +161,6 @@
     </div>
 
 <script>
-    const capsters = <?= JSON.stringify(capsters) ?>;
-    const store = <?= JSON.stringify(store) ?>;
-
     document.addEventListener("DOMContentLoaded", () => {
         const capsterSelect = document.getElementById("capsterSelect");
         const storeInfo = document.getElementById("store-info");
@@ -177,26 +174,59 @@
         const keterangan = document.getElementById("keterangan");
         const spinner = document.getElementById("spinner");
         
-        // Perbaiki pemanggilan ini untuk menampilkan nama toko dari Apps Script
-        if (store && store.name) {
-            storeInfo.textContent = `Anda akan absen di toko: ${store.name}`;
-        } else {
-            storeInfo.textContent = `Anda akan absen di toko: Tidak Ditemukan`;
-        }
+        // Ganti dengan URL Web App Apps Script Anda yang sudah di-deploy
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/xxxxxxxxxxxxxx/exec";
 
-        // Isi dropdown capster dari spreadsheet
-        if (Array.isArray(capsters)) {
-            capsters.forEach(c => {
-                const option = document.createElement("option");
-                option.value = c.id;
-                option.textContent = c.name;
-                capsterSelect.appendChild(option);
-            });
-        }
+        // Fungsi untuk mengambil data awal dari Apps Script
+        async function fetchInitialData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const storeId = urlParams.get('storeId');
 
-        // ... Lanjutkan dengan kode JavaScript lainnya
-        // Bagian ini tidak berubah, hanya untuk konteks
+            if (!storeId) {
+                updateStatus("Error", "URL tidak valid. Parameter storeId tidak ditemukan.", "");
+                return null;
+            }
+            
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?storeId=${storeId}`);
+                const data = await response.json();
+                
+                if (data.status === "Error") {
+                    updateStatus("Error", data.message, "");
+                    return null;
+                }
+
+                // Tampilkan info store
+                if (data.store && data.store.name) {
+                    storeInfo.textContent = `Anda akan absen di toko: ${data.store.name}`;
+                } else {
+                    storeInfo.textContent = `Anda akan absen di toko: Tidak Ditemukan`;
+                }
+
+                // Isi dropdown capster
+                if (Array.isArray(data.capsters)) {
+                    data.capsters.forEach(c => {
+                        const option = document.createElement("option");
+                        option.value = c.id;
+                        option.textContent = c.name;
+                        capsterSelect.appendChild(option);
+                    });
+                }
+
+                return data;
+
+            } catch (error) {
+                updateStatus("Error", "Gagal memuat data dari Apps Script.", error.message);
+                return null;
+            }
+        }
         
+        // Panggil fungsi untuk memuat data saat halaman dimuat
+        let initialData = null;
+        fetchInitialData().then(data => {
+            initialData = data;
+        });
+
         photoInput.addEventListener("change", (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -214,15 +244,15 @@
         checkinBtn.addEventListener("click", handleCheckin);
 
         async function handleCheckin() {
-            const capsterSelect = document.getElementById("capsterSelect");
-            const selectedCapsterId = capsterSelect.value;
-            const photoFile = photoInput.files[0];
-
-            if (!store || !store.id) {
-                updateStatus("Error", "ID Toko tidak ditemukan. Gagal absensi.", "");
+            if (!initialData || !initialData.store) {
+                updateStatus("Error", "Data toko tidak tersedia. Muat ulang halaman.", "");
                 return;
             }
 
+            const capsterSelect = document.getElementById("capsterSelect");
+            const selectedCapsterId = capsterSelect.value;
+            const photoFile = photoInput.files[0];
+            
             if (!selectedCapsterId) {
                 updateStatus("Ditolak", "Mohon pilih nama Anda.", "Gagal absensi.");
                 return;
@@ -253,21 +283,27 @@
                 reader.onloadend = () => {
                     const photoDataUrl = reader.result;
                     
-                    // Panggil Apps Script doPost dengan data absensi
-                    google.script.run
-                        .withSuccessHandler(response => {
-                            updateStatus(response.status, response.keterangan, "");
-                        })
-                        .withFailureHandler(error => {
-                            updateStatus("Error", "Terjadi kesalahan saat mengirim data.", error.message);
-                        })
-                        .doPost(JSON.stringify({
-                            storeId: store.id,
+                    // Gunakan Fetch API untuk mengirim POST request ke Apps Script
+                    fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            storeId: initialData.store.id,
                             capsterId: selectedCapsterId,
                             capsterLat: capsterLat,
                             capsterLon: capsterLon,
                             photoData: photoDataUrl
-                        }));
+                        }),
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        updateStatus(data.status, data.keterangan, "");
+                    })
+                    .catch(error => {
+                        updateStatus("Error", "Terjadi kesalahan saat mengirim data.", error.message);
+                    });
                 };
                 reader.readAsDataURL(photoFile);
 
@@ -290,7 +326,6 @@
         function updateStatus(status, message, info) {
             statusMessage.innerText = status;
             keterangan.innerText = message;
-            // simulasiInfo.innerText = info;
             const statusClass = status.toLowerCase().replace(/\s/g, "-");
             statusMessage.className = `status-${statusClass}`;
             spinner.classList.add("hidden");
