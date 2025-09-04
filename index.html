@@ -208,7 +208,7 @@
           return;
       }
       
-      const store = data.stores.find(s => s.id === storeId);
+      const store = data.store;
       if (!store) {
         handleError("ID Toko tidak valid atau tidak ditemukan.");
         loadingSpinner.classList.add("hidden");
@@ -216,14 +216,14 @@
         return;
       }
 
-      storeInfo.innerText = `Anda akan absen di toko: ${store.store}`;
+      storeInfo.innerText = `Anda akan absen di toko: ${store.name}`;
       
       if (Array.isArray(data.capsters) && data.capsters.length > 0) {
         capsterSelect.innerHTML = '<option value="">-- Pilih Capster --</option>';
         data.capsters.forEach(capster => {
           const option = document.createElement("option");
           option.value = capster.id;
-          option.text = capster.nama;
+          option.text = capster.name;
           capsterSelect.appendChild(option);
         });
       } else {
