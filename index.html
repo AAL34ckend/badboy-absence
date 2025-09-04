@@ -137,10 +137,11 @@
         <h1>Sistem Absensi Capster</h1>
         <div id="absensi-form-section" class="form-section">
             <p id="store-info">Anda akan absen di toko:</p>
-            <label for="capsterSelect" class="sr-only">Pilih Nama Anda:</label>
+            <label for="capsterSelect">Pilih Capster:</label>
             <select id="capsterSelect">
-                <option value="">-- Pilih Capster --</option>
+              <option value="" disabled selected>Memuat daftar capster...</option>
             </select>
+            <p class="loading-message" id="loadingMessageCapster"></p>
             <label for="photoInput" class="sr-only">Ambil Foto Absensi:</label>
             <input type="file" id="photoInput" accept="image/*" capture="camera" required>
             <div id="photo-preview" class="photo-preview hidden">
@@ -162,6 +163,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
+        const loadingMessageCapster = document.getElementById("loadingMessageCapster");
         const capsterSelect = document.getElementById("capsterSelect");
         const storeInfo = document.getElementById("store-info");
         const checkinBtn = document.getElementById("checkinBtn");
@@ -179,13 +181,17 @@
         
         // Fungsi untuk mengambil data awal dari Apps Script
         async function fetchInitialData() {
+            loadingMessageCapster.innerText = "Mengambil data capster...";
+            capsterSelect.disabled = true; // Nonaktifkan dropdown saat loading
             console.log("Memulai fetching data...");
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('storeId');
 
+
             if (!storeId) {
                 console.error("Kesalahan: Parameter 'storeId' tidak ditemukan di URL.");
                 updateStatus("Error", "URL tidak valid. Parameter storeId tidak ditemukan.", "");
+                loadingMessageCapster.innerText = "URL tidak valid. Parameter storeId tidak ditemukan.";
                 return null;
             }
             
@@ -225,7 +231,7 @@
                         data.capsters.forEach(c => {
                             const option = document.createElement("option");
                             option.value = c.id;
-                            option.textContent = c.name;
+                            option.textContent = c.nama;
                             capsterSelect.appendChild(option);
                         });
                     }
