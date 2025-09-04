@@ -182,10 +182,15 @@
         // Fungsi untuk mengambil data awal dari Apps Script
         async function fetchInitialData() {
             console.log("Memulai fetching data...");
+            
+            // Tampilkan pesan loading
+            const loadingMessageCapster = document.getElementById("loadingMessageCapster");
+            loadingMessageCapster.innerText = "Mengambil data capster...";
+            capsterSelect.disabled = true;
+        
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('storeId');
-
-
+        
             if (!storeId) {
                 console.error("Kesalahan: Parameter 'storeId' tidak ditemukan di URL.");
                 updateStatus("Error", "URL tidak valid. Parameter storeId tidak ditemukan.", "");
@@ -200,49 +205,54 @@
                 if (!response.ok) {
                     throw new Error(`Kesalahan Jaringan: ${response.status} ${response.statusText}`);
                 }
-
+        
                 const data = await response.json();
                 console.log("Data yang diterima (JSON):", data);
-
+        
                 if (data.status === "Error") {
                     console.error("Kesalahan dari server:", data.message);
                     updateStatus("Error", data.message, "");
+                    loadingMessageCapster.innerText = `Error: ${data.message}`;
                     return null;
                 }
-
+        
                 // Tampilkan info store
                 if (data.store && data.store.name) {
                     console.log("Data toko berhasil dimuat:", data.store.name);
-                    storeInfo.textContent = `Anda akan absen di toko: ${data.store.nama}`;
+                    storeInfo.textContent = `Anda akan absen di toko: ${data.store.name}`;
                 } else {
                     console.warn("Peringatan: Data toko tidak ditemukan.");
                     storeInfo.textContent = `Anda akan absen di toko: Tidak Ditemukan`;
                 }
-
+        
                 // Isi dropdown capster
                 if (Array.isArray(data.capsters)) {
                     console.log("Daftar capster berhasil dimuat. Jumlah:", data.capsters.length);
+                    capsterSelect.innerHTML = '<option value="" disabled selected>-- Pilih Capster --</option>';
                     if (data.capsters.length === 0) {
                         capsterSelect.innerHTML = '<option value="" disabled selected>Tidak ada capster</option>';
                     } else {
-                        capsterSelect.innerHTML = '<option value="" disabled selected>-- Pilih Capster --</option>';
                         data.capsters.forEach(c => {
                             const option = document.createElement("option");
                             option.value = c.id;
-                            option.textContent = c.nama;
+                            option.textContent = c.name; // <--- INI PERBAIKAN UTAMANYA!
                             capsterSelect.appendChild(option);
                         });
                     }
+                    loadingMessageCapster.innerText = ""; // Sembunyikan pesan loading
+                    capsterSelect.disabled = false; // Aktifkan dropdown
                 } else {
                     console.error("Kesalahan: 'capsters' yang diterima bukan array.");
                     capsterSelect.innerHTML = '<option value="" disabled selected>Gagal memuat capster</option>';
+                    loadingMessageCapster.innerText = "Gagal memuat daftar capster.";
                 }
-
+        
                 return data;
-
+        
             } catch (error) {
                 console.error("Gagal fetching data:", error);
                 updateStatus("Error", "Gagal memuat data dari Apps Script.", error.message);
+                loadingMessageCapster.innerText = "Gagal memuat data. Cek koneksi.";
                 return null;
             }
         }
