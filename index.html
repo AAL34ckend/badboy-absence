@@ -130,6 +130,138 @@
     </div>
   </div>
 
+  <!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistem Absensi Capster</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f0f2f5;
+      margin: 0;
+    }
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 90%;
+      max-width: 500px;
+    }
+    h1 {
+      color: #333;
+    }
+    #status-message {
+      font-size: 2em;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #4caf50;
+    }
+    .status-hadir { color: #4caf50; }
+    .status-terlambat { color: #ff9800; }
+    .status-ditolak { color: #f44336; }
+    .status-error { color: #607d8b; }
+    #keterangan {
+      font-size: 1.1em;
+      color: #555;
+    }
+    #store-info {
+      color: #888;
+      font-style: italic;
+    }
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+      border: 0.25em solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spinner-grow 0.75s linear infinite;
+      margin: 50px auto;
+      color: #007bff;
+    }
+    @keyframes spinner-grow {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    select, input[type="file"], button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    .photo-preview {
+      margin-top: 15px;
+      border: 1px dashed #ccc;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .photo-preview img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: auto;
+      border-radius: 5px;
+    }
+    .hidden { display: none; }
+    #qrcode-container {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px dashed #ddd;
+      border-radius: 8px;
+    }
+    #qrcode-container img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sistem Absensi Capster</h1>
+    
+    <div id="loading-spinner" class="spinner-border text-primary" role="status">
+    </div>
+
+    <!-- Attendance Form Section -->
+    <div id="absensi-form-section" class="hidden">
+      <p id="store-info"></p>
+      <label for="capsterSelect">Pilih Nama Anda:</label>
+      <select id="capsterSelect"></select>
+      
+      <label for="photoInput">Ambil Foto Absensi:</label>
+      <input type="file" id="photoInput" accept="image/*" capture="camera" required>
+      <div id="photo-preview" class="photo-preview hidden">
+        <p>Pratinjau Foto:</p>
+        <img id="previewImage" src="" alt="Pratinjau Foto">
+      </div>
+      
+      <button id="checkinBtn" class="hidden">Absen Buka</button>
+      <button id="checkoutBtn" class="hidden">Absen Tutup</button>
+    </div>
+
+    <!-- Status Message Section -->
+    <div id="status-container" class="hidden">
+      <h2 id="status-message"></h2>
+      <p id="keterangan"></p>
+    </div>
+  </div>
+
   <script>
     // Ganti dengan URL Google Apps Script yang telah Anda Deploy
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9rczn07E29LnlK_hT1XizTHm7V_bZnqOq8Cevd0fjNFg7JO63-aSmnCmXTX_kjw9t0g/exec';
@@ -345,5 +477,7 @@
       }
     }
   </script>
+</body>
+</html>
 </body>
 </html>
