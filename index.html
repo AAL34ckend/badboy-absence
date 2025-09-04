@@ -181,8 +181,6 @@
         
         // Fungsi untuk mengambil data awal dari Apps Script
         async function fetchInitialData() {
-            loadingMessageCapster.innerText = "Mengambil data capster...";
-            capsterSelect.disabled = true; // Nonaktifkan dropdown saat loading
             console.log("Memulai fetching data...");
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('storeId');
@@ -253,6 +251,7 @@
         let initialData = null;
         fetchInitialData().then(data => {
             initialData = data;
+            console.log(initialData);
         });
 
         photoInput.addEventListener("change", (event) => {
