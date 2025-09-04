@@ -178,18 +178,21 @@
         
         // Ganti dengan URL Web App Apps Script Anda yang sudah di-deploy
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9rczn07E29LnlK_hT1XizTHm7V_bZnqOq8Cevd0fjNFg7JO63-aSmnCmXTX_kjw9t0g/exec";
+
+        let initialData = null; // Deklarasi variabel di sini
+
         // Fungsi untuk mengambil data awal dari Apps Script
         async function fetchInitialData() {
             console.log("Memulai fetching data...");
             
             // Tampilkan pesan loading
-            const loadingMessageCapster = document.getElementById("loadingMessageCapster");
             loadingMessageCapster.innerText = "Mengambil data capster...";
             capsterSelect.disabled = true;
-        
+            checkinBtn.disabled = true; // Nonaktifkan tombol absen saat loading
+
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('storeId');
-        
+            
             if (!storeId) {
                 console.error("Kesalahan: Parameter 'storeId' tidak ditemukan di URL.");
                 updateStatus("Error", "URL tidak valid. Parameter storeId tidak ditemukan.", "");
@@ -204,17 +207,17 @@
                 if (!response.ok) {
                     throw new Error(`Kesalahan Jaringan: ${response.status} ${response.statusText}`);
                 }
-        
+
                 const data = await response.json();
                 console.log("Data yang diterima (JSON):", data);
-        
+
                 if (data.status === "Error") {
                     console.error("Kesalahan dari server:", data.message);
                     updateStatus("Error", data.message, "");
                     loadingMessageCapster.innerText = `Error: ${data.message}`;
                     return null;
                 }
-        
+                
                 // Tampilkan info store
                 if (data.store && data.store.name) {
                     console.log("Data toko berhasil dimuat:", data.store.name);
@@ -223,7 +226,7 @@
                     console.warn("Peringatan: Data toko tidak ditemukan.");
                     storeInfo.textContent = `Anda akan absen di toko: Tidak Ditemukan`;
                 }
-        
+
                 // Isi dropdown capster
                 if (Array.isArray(data.capsters)) {
                     console.log("Daftar capster berhasil dimuat. Jumlah:", data.capsters.length);
@@ -234,7 +237,7 @@
                         data.capsters.forEach(c => {
                             const option = document.createElement("option");
                             option.value = c.id;
-                            option.textContent = c.name; // <--- INI PERBAIKAN UTAMANYA!
+                            option.textContent = c.name;
                             capsterSelect.appendChild(option);
                         });
                     }
@@ -245,9 +248,9 @@
                     capsterSelect.innerHTML = '<option value="" disabled selected>Gagal memuat capster</option>';
                     loadingMessageCapster.innerText = "Gagal memuat daftar capster.";
                 }
-        
+
                 return data;
-        
+
             } catch (error) {
                 console.error("Gagal fetching data:", error);
                 updateStatus("Error", "Gagal memuat data dari Apps Script.", error.message);
@@ -257,12 +260,13 @@
         }
         
         // Panggil fungsi untuk memuat data saat halaman dimuat
-        let initialData = null;
+        // Setelah data berhasil dimuat, initialData akan terisi
         fetchInitialData().then(data => {
             initialData = data;
-            console.log(initialData);
+            console.log("Initial data loaded:", initialData);
         });
 
+        // Event listener untuk input foto
         photoInput.addEventListener("change", (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -272,55 +276,46 @@
                     photoPreviewContainer.classList.remove("hidden");
                 };
                 reader.readAsDataURL(file);
+                // Aktifkan tombol hanya jika ada file DAN initialData sudah dimuat
+                if (initialData && initialData.store) {
+                    checkinBtn.disabled = false;
+                }
             } else {
                 photoPreviewContainer.classList.add("hidden");
-            }
-        });
-
-        checkinBtn.disabled = true;
-
-        // Tambahkan event listener untuk input foto
-        photoInput.addEventListener("change", (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                // Aktifkan tombol jika ada file
-                checkinBtn.disabled = false;
-                // ... (logika preview gambar yang sudah ada)
-            } else {
                 // Nonaktifkan tombol jika tidak ada file
                 checkinBtn.disabled = true;
-                // ... (logika menyembunyikan preview gambar)
             }
         });
-        
-        checkinBtn.addEventListener("click", handleCheckin);
 
+        // Event listener untuk tombol absen
+        checkinBtn.addEventListener("click", handleCheckin);
 
         async function handleCheckin() {
             if (!initialData || !initialData.store) {
-                updateStatus("Error", "Data toko tidak tersedia. Muat ulang halaman.", "");
+                // Jika data belum dimuat, beri tahu pengguna dan muat ulang halaman.
+                updateStatus("Error", "Data toko belum siap. Mohon tunggu sebentar lalu coba lagi.", "");
                 return;
             }
-        
-            const capsterSelect = document.getElementById("capsterSelect");
+            
             const selectedCapsterId = capsterSelect.value;
             const photoFile = photoInput.files[0];
-            
+
             if (!selectedCapsterId) {
                 updateStatus("Ditolak", "Mohon pilih nama Anda.", "Gagal absensi.");
                 return;
             }
+            
             if (!photoFile) {
                 updateStatus("Ditolak", "Mohon ambil foto absensi.", "Gagal absensi.");
                 return;
             }
-        
+
             // Prepare UI for submission
             absensiFormSection.classList.add("hidden");
             statusDisplaySection.classList.remove("hidden");
             spinner.classList.remove("hidden");
             updateStatus("Memproses", "Mengambil lokasi dan mengirim data...", "");
-        
+            
             let position;
             try {
                 position = await new Promise((resolve, reject) => {
@@ -331,7 +326,6 @@
                     });
                 });
             } catch (error) {
-                // Handle geolocation errors here
                 spinner.classList.add("hidden");
                 let errorMessage = "Terjadi kesalahan.";
                 if (error.code === 1) { 
@@ -344,13 +338,9 @@
                     errorMessage = error.message;
                 }
                 updateStatus("Ditolak", errorMessage, "");
-                
-                // This is the crucial part: return early and stop the function
-                // from proceeding if an error occurs.
-                return; 
+                return;
             }
             
-            // The rest of the code will only run if a valid position is retrieved
             const capsterLat = position.coords.latitude;
             const capsterLon = position.coords.longitude;
             
