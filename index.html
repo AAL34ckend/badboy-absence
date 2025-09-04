@@ -278,7 +278,24 @@
             }
         });
 
+        checkinBtn.disabled = true;
+
+        // Tambahkan event listener untuk input foto
+        photoInput.addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                // Aktifkan tombol jika ada file
+                checkinBtn.disabled = false;
+                // ... (logika preview gambar yang sudah ada)
+            } else {
+                // Nonaktifkan tombol jika tidak ada file
+                checkinBtn.disabled = true;
+                // ... (logika menyembunyikan preview gambar)
+            }
+        });
+        
         checkinBtn.addEventListener("click", handleCheckin);
+
 
         async function handleCheckin() {
             if (!initialData || !initialData.store) {
