@@ -136,7 +136,7 @@
     <div class="container">
         <h1>Sistem Absensi Capster</h1>
         <div id="absensi-form-section" class="form-section">
-            <p id="store-info">Anda akan absen di toko: **Simulasi Toko Jakarta**</p>
+            <p id="store-info">Anda akan absen di toko:</p>
             <label for="capsterSelect" class="sr-only">Pilih Nama Anda:</label>
             <select id="capsterSelect">
                 <option value="">-- Pilih Capster --</option>
@@ -175,12 +175,13 @@
         const statusDisplaySection = document.getElementById("status-display-section");
         const statusMessage = document.getElementById("status-message");
         const keterangan = document.getElementById("keterangan");
-        const simulasiInfo = document.getElementById("simulasi-info");
         const spinner = document.getElementById("spinner");
-
-        // Tampilkan info store
-        if (store) {
-            storeInfo.textContent = `Anda akan absen di toko: ${store.nama_store}`;
+        
+        // Perbaiki pemanggilan ini untuk menampilkan nama toko dari Apps Script
+        if (store && store.name) {
+            storeInfo.textContent = `Anda akan absen di toko: ${store.name}`;
+        } else {
+            storeInfo.textContent = `Anda akan absen di toko: Tidak Ditemukan`;
         }
 
         // Isi dropdown capster dari spreadsheet
@@ -188,10 +189,13 @@
             capsters.forEach(c => {
                 const option = document.createElement("option");
                 option.value = c.id;
-                option.textContent = c.name; // Menggunakan c.name, sesuai dengan Apps Script findRow
+                option.textContent = c.name;
                 capsterSelect.appendChild(option);
             });
         }
+
+        // ... Lanjutkan dengan kode JavaScript lainnya
+        // Bagian ini tidak berubah, hanya untuk konteks
         
         photoInput.addEventListener("change", (event) => {
             const file = event.target.files[0];
@@ -213,7 +217,7 @@
             const capsterSelect = document.getElementById("capsterSelect");
             const selectedCapsterId = capsterSelect.value;
             const photoFile = photoInput.files[0];
-            
+
             if (!store || !store.id) {
                 updateStatus("Error", "ID Toko tidak ditemukan. Gagal absensi.", "");
                 return;
@@ -286,7 +290,7 @@
         function updateStatus(status, message, info) {
             statusMessage.innerText = status;
             keterangan.innerText = message;
-            simulasiInfo.innerText = info;
+            // simulasiInfo.innerText = info;
             const statusClass = status.toLowerCase().replace(/\s/g, "-");
             statusMessage.className = `status-${statusClass}`;
             spinner.classList.add("hidden");
