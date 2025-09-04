@@ -182,6 +182,7 @@
         // Fungsi untuk mengambil data awal dari Apps Script
         async function fetchInitialData() {
             console.log("Memulai fetching data...");
+            console.log(data.capsters);
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('storeId');
 
