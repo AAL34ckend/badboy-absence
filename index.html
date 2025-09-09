@@ -181,20 +181,20 @@
             let initialData = null;
     
             function updateStatus(status, message, info, keepSpinner = false) {
-    statusMessage.innerText = status;
-    keterangan.innerText = message;
-    const statusClass = status.toLowerCase().replace(/\s/g, "-");
-    statusMessage.className = `status-${statusClass}`;
-
-    if (!keepSpinner) {
-        spinner.classList.add("hidden");
-    } else {
-        spinner.classList.remove("hidden");
-    }
-
-    statusDisplaySection.classList.remove("hidden");
-    absensiFormSection.classList.add("hidden");
-}
+                statusMessage.innerText = status;
+                keterangan.innerText = message;
+                const statusClass = status.toLowerCase().replace(/\s/g, "-");
+                statusMessage.className = `status-${statusClass}`;
+            
+                if (!keepSpinner) {
+                    spinner.classList.add("hidden");
+                } else {
+                    spinner.classList.remove("hidden");
+                }
+            
+                statusDisplaySection.classList.remove("hidden");
+                absensiFormSection.classList.add("hidden");
+            }
     
             // 👇 WAJIB izin lokasi langsung saat halaman dimuat
             navigator.geolocation.getCurrentPosition(
@@ -297,86 +297,81 @@
             checkinBtn.addEventListener("click", handleCheckin);
     
             async function handleCheckin() {
-    if (!initialData || !initialData.store) {
-        updateStatus("Error", "Data toko belum siap. Mohon tunggu sebentar lalu coba lagi.", "");
-        return;
-    }
-    
-    const selectedCapsterId = capsterSelect.value;
-    const photoFile = photoInput.files[0];
-
-    if (!selectedCapsterId) {
-        updateStatus("Ditolak", "Mohon pilih nama Anda.", "Gagal absensi.");
-        return;
-    }
-    
-    if (!photoFile) {
-        updateStatus("Ditolak", "Mohon ambil foto absensi.", "Gagal absensi.");
-        return;
-    }
-
-    // Prepare UI for submission
-    absensiFormSection.classList.add("hidden");
-    statusDisplaySection.classList.remove("hidden");
-    spinner.classList.remove("hidden");
-    updateStatus("Memproses", "Mengambil lokasi (live) dan mengirim data...", "");
-    
-    let watcherId;
-
-    watcherId = navigator.geolocation.watchPosition(
-        (position) => {
-            const capsterLat = position.coords.latitude;
-            const capsterLon = position.coords.longitude;
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const photoDataUrl = reader.result;
-                
-                fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        storeId: initialData.store.id,
-                        capsterId: selectedCapsterId,
-                        capsterLat: capsterLat,
-                        capsterLon: capsterLon,
-                        photoData: photoDataUrl
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
+                    if (!initialData || !initialData.store) {
+                        updateStatus("Error", "Data toko belum siap. Mohon tunggu sebentar lalu coba lagi.", "");
+                        return;
                     }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    updateStatus(data.status, data.keterangan, "");
-                    // ✅ stop live location setelah berhasil kirim
-                    navigator.geolocation.clearWatch(watcherId);
-                })
-                .catch(error => {
-                    updateStatus("Error", "Terjadi kesalahan saat mengirim data.", error.message);
-                    navigator.geolocation.clearWatch(watcherId);
-                });
-            };
-            reader.readAsDataURL(photoFile);
-        },
-        (error) => {
-            spinner.classList.add("hidden");
-            let errorMessage = "Terjadi kesalahan.";
-            if (error.code === 1) { 
-                errorMessage = "Akses lokasi ditolak. Absensi gagal.";
-            } else if (error.code === 2) { 
-                errorMessage = "Lokasi tidak tersedia.";
-            } else if (error.code === 3) { 
-                errorMessage = "Waktu habis saat mengambil lokasi.";
-            } else {
-                errorMessage = error.message;
-            }
-            updateStatus("Ditolak", errorMessage, "");
-            navigator.geolocation.clearWatch(watcherId);
-        },
-        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
-    );
-}
-});
+                    
+                    const selectedCapsterId = capsterSelect.value;
+                    const photoFile = photoInput.files[0];
+            
+                    if (!selectedCapsterId) {
+                        updateStatus("Ditolak", "Mohon pilih nama Anda.", "Gagal absensi.");
+                        return;
+                    }
+                    
+                    if (!photoFile) {
+                        updateStatus("Ditolak", "Mohon ambil foto absensi.", "Gagal absensi.");
+                        return;
+                    }
+            
+                    // Prepare UI
+                    absensiFormSection.classList.add("hidden");
+                    statusDisplaySection.classList.remove("hidden");
+                    spinner.classList.remove("hidden");
+                    updateStatus("Memproses", "Mengambil lokasi (live) dan mengirim data...", "");
+                    
+                    let watcherId;
+            
+                    watcherId = navigator.geolocation.watchPosition(
+                        (position) => {
+                            const capsterLat = position.coords.latitude;
+                            const capsterLon = position.coords.longitude;
+            
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                const photoDataUrl = reader.result;
+            
+                                // 🔥 ganti JSON -> FormData
+                                const formData = new FormData();
+                                formData.append("storeId", initialData.store.id);
+                                formData.append("capsterId", selectedCapsterId);
+                                formData.append("capsterLat", capsterLat);
+                                formData.append("capsterLon", capsterLon);
+                                formData.append("photoData", photoDataUrl);
+            
+                                fetch(APPS_SCRIPT_URL, {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    updateStatus(data.status, data.keterangan, "");
+                                    navigator.geolocation.clearWatch(watcherId); // stop lokasi
+                                })
+                                .catch(error => {
+                                    updateStatus("Error", "Terjadi kesalahan saat mengirim data.", error.message);
+                                    navigator.geolocation.clearWatch(watcherId);
+                                });
+                            };
+                            reader.readAsDataURL(photoFile);
+                        },
+                        (error) => {
+                            spinner.classList.add("hidden");
+                            let errorMessage = "Terjadi kesalahan.";
+                            if (error.code === 1) errorMessage = "Akses lokasi ditolak. Absensi gagal.";
+                            else if (error.code === 2) errorMessage = "Lokasi tidak tersedia.";
+                            else if (error.code === 3) errorMessage = "Waktu habis saat mengambil lokasi.";
+                            else errorMessage = error.message;
+            
+                            updateStatus("Ditolak", errorMessage, "");
+                            navigator.geolocation.clearWatch(watcherId);
+                        },
+                        { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+                    );
+                }
+            });
+        });
     </script>
 
 </body>
